@@ -1,0 +1,6 @@
+SECRET_KEY = "dp5KY3rHiUzR1jChthGLQSvuQqVCcR-J0rwOcx7DDD6tB9dZGTYZc7mO68N4rp6u"
+CONSUMER_KEY = "c13b921a95382529d2953fafd10fdc20"
+CONSUMER_SECRET = "cfa66e84c47028b60d558beaa4d825bf398b4cbd"
+OAUTH_MWURI = "https://test.wikidata.org/w/index.php"
+WIKIDATA_API_URL = "https://test.wikidata.org/api.php"
+GREETING = "Goodnight moon!"

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexeme Game - Senses game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .quiz-container {
+            position: relative;
+            overflow: hidden;
+            width: 90%;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card {
+            width: 100%;
+            height: 80%;
+            position: absolute;
+            top: 0;
+            left: 100%;
+            opacity: 0;
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            border: 4px solid #333;
+        }
+        .card.active {
+            left: 0;
+            opacity: 1;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            position: relative;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="quiz-container">
+            <div class="card active" id="card-container">
+                <p id="question-text">Loading question...</p>
+                <input type="text" id="userAnswer" placeholder="Your answer...">
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-button next-button" onclick="nextCard()">&#8594;</button>
+        </div>
+    </div>
+    <script>
+        let currentCardIndex = 0;
+        let userAnswers = [];
+        const cards = [
+            { id: 1, question: "What is the first word?" },
+            { id: 2, question: "What comes next?" },
+            { id: 3, question: "Final answer?" } // Last card
+        ];
+        
+        function nextCard() {
+            let userInput = document.getElementById('userAnswer').value;
+            userAnswers.push({ cardId: cards[currentCardIndex].id, answer: userInput });
+            
+            if (currentCardIndex < cards.length - 1) {
+                currentCardIndex++;
+                loadCard(cards[currentCardIndex]);
+            } else {
+                submitAnswers();
+            }
+        }
+        
+        function loadCard(card) {
+            document.getElementById('userAnswer').value = "";
+            document.getElementById('question-text').innerText = card.question;
+        }
+        
+        function submitAnswers() {
+            fetch('/submit-answers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: userAnswers })
+            }).then(response => response.json())
+              .then(data => {
+                  alert("Answers submitted successfully!");
+              });
+        }
+        
+        window.onload = () => loadCard(cards[currentCardIndex]);
+    </script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexeme Game - Senses game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f0f0f0;
+            padding: 15px;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .menu a {
+            text-decoration: none;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+        }
+        .menu a:hover {
+            background-color: #e0e0e0;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .full-page-wrapper {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .full-page-wrapper button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 10px 15px;
+        }
+        .image-box, .ocr-text, .input-field {
+            margin: 15px 0;
+        }
+        .image-box {
+            border: 2px solid #333;
+            padding: 20px;
+            display: inline-block;
+        }
+        button {
+            padding: 10px 15px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input {
+            width: 80%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .button-group button {
+            flex: 1;
+            padding: 10px;
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .button-group button:hover {
+            background: #0056b3;
+        }
+        table {
+            width: 50%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .quiz-container {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 350px; /* Increased height to accommodate buttons */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card {
+            width: 80%;
+            height: 80%;
+            position: absolute;
+            top: 0;
+            left: 100%;
+            opacity: 0;
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            border: 4px solid #333;
+        }
+        .card.active {
+            left: 0;
+            opacity: 1;
+        }
+        .card.prev {
+            left: -100%;
+        }
+        .card.next {
+            left: 100%;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px; /* Space from card */
+            position: relative;
+            width: 100%;
+        }
+
+        .nav-button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+        .nav-button:hover {
+            background: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>The Lexeme Game</div>
+        <div class="menu">
+            {% if username %}
+                <span>Hello {{ username }}</span>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="container">
+        <div class="full-page-wrapper">
+            <button>Full Page</button>
+        </div>
+        <div class="lemma-text">Loading...</div>
+        <div class="image-box"><img src="https://placehold.jp/30/dd6699/ffffff/120x120png?text=game" alt="Placeholder image" id="scan"></div>
+        <div class="ocr-text">Loading...</div>
+
+        <div class="quiz-container">
+            <div class="card active">
+                <input type="text" id="lemmaInput" placeholder="Enter lemma...">
+                <input type="text" id="languageInput" placeholder="Language (default: en)">
+                <button id="searchButton">Search Lemma</button>
+                <div id="resultContainer"></div>
+            </div>
+            <div class="card">
+                <h3>Lexeme Senses</h3>
+                <div id="sensesContainer">Select a lexeme to view its senses.</div>
+            </div>
+            <div class="card">
+                <div class="input-field">
+                    <input type="text" placeholder="Loading...">
+                </div>
+                <div class="button-group">
+                    <button id="check-answer">Check Answer</button>
+                    <button id="hint">Hint</button>
+                    <button id="next">Next</button>
+                </div>
+            </div>
+            <!-- Navigation Buttons Inside the Container -->
+            <div class="nav-buttons">
+                <button class="nav-button prev-button" onclick="prevCard()">&#8592;</button>
+                <button class="nav-button next-button" onclick="nextCard()">&#8594;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchContent() {
+            try {
+                const response = await fetch('http://localhost:4444/game/get/sense');
+                const data = await response.json();
+                console.log(data);
+                document.querySelector('.lemma-text').innerText = data.lemma;
+                document.querySelector('.ocr-text').innerText = data.ocr_text;
+                document.querySelector('.input-field input').placeholder = data.ocr_text;
+                document.getElementById('scan').src = data.scanned_image;
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        window.onload = fetchContent;
+    </script>
+
+    <script type="text/javascript">
+       function generateTable(lemmas, containerId) {
+        if (!lemmas || lemmas.length === 0) return;
+
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error('Container not found');
+            return;
+        }
+
+        // Create content div
+        const content = document.createElement('div');
+        content.className = 'content';
+
+        // Create table
+        const table = document.createElement('table');
+
+        // Create table headers
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = ['ID', 'Label', 'Language', 'Description', 'Link', 'Select'];
+
+        headers.forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Create table body
+        const tbody = document.createElement('tbody');
+        lemmas.forEach(lemma => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${lemma.id}</td>
+                <td>${lemma.label}</td>
+                <td>${lemma.language}</td>
+                <td>${lemma.description}</td>
+                <td><a href="https://wikidata.org/wiki/Lexeme:${lemma.id}" target="_blank">${lemma.label}</a></td>
+                <td><button class="select-btn">Select</button></td>
+            `;
+
+            // Add event listener to the select button
+            row.querySelector('.select-btn').addEventListener('click', function() {
+                // Remove highlight from any previously selected row
+                document.querySelectorAll('tr.selected').forEach(el => el.classList.remove('selected'));
+                // Highlight the selected row
+                row.classList.add('selected');
+            });
+
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+
+        // Append elements
+        content.appendChild(table);
+        container.appendChild(content);
+
+        // CSS for highlighting the selected row
+        const style = document.createElement('style');
+        style.textContent = `
+            .selected {
+                background-color: yellow !important;
+            }
+        `;
+        document.head.appendChild(style);
+        }
+
+        async function searchLemmas(lemma, language = 'en') {
+            /**
+             * Search for a lemma in Wikidata lexemes using the Wikidata API.
+             *
+             * @param {string} lemma - The lemma to search for.
+             * @param {string} language - The language code (default is 'en' for English).
+             * @return {Promise<Array>} A list of matching lexemes with their IDs and descriptions.
+             */
+            const url = "https://www.wikidata.org/w/api.php";
+            const params = new URLSearchParams({
+                action: "wbsearchentities",
+                search: lemma,
+                language: language,
+                type: "lexeme",
+                format: "json",
+                origin: "*" // Needed for CORS issues
+            });
+            
+            try {
+                const response = await fetch(`${url}?${params}`);
+                if (!response.ok) {
+                    console.error(`Error: Received status code ${response.status}`);
+                    return [];
+                }
+                
+                const data = await response.json();
+                const results = [];
+                
+                for (const entry of data.search || []) {
+                    const lexemeId = entry.id;
+                    const lexemeResponse = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${lexemeId}.json`);
+                    if (!lexemeResponse.ok) continue;
+                    
+                    const lexemeData = await lexemeResponse.json();
+                    const entities = lexemeData.entities || {};
+                    const lexemeInfo = entities[lexemeId] || {};
+                    
+                    if (!lexemeInfo.lemmas) continue;
+                    const lemmasKeys = Object.keys(lexemeInfo.lemmas);
+                    const lexemeLanguage = lemmasKeys[0] || '';
+                    console.log("lexeme_language", lexemeLanguage);
+                    
+                    if (lexemeLanguage === language) {
+                        results.push({
+                            id: lexemeId,
+                            label: entry.label || "",
+                            description: entry.description || "",
+                            language: lexemeLanguage
+                        });
+                    }
+                }
+                
+                return results;
+            } catch (error) {
+                console.error("Error fetching lemmas:", error);
+                return [];
+            }
+        }
+
+        // Function to handle button click
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchButton = document.getElementById("searchButton");
+            const resultContainer = document.getElementById("resultContainer");
+            
+            searchButton.addEventListener("click", async () => {
+                const lemmaInput = document.getElementById("lemmaInput").value;
+                const languageInput = document.getElementById("languageInput").value || 'en';
+                
+                if (!lemmaInput) {
+                    alert("Please enter a lemma to search.");
+                    return;
+                }
+                
+                resultContainer.innerHTML = "Searching...";
+                const results = await searchLemmas(lemmaInput, languageInput);
+                
+                if (results.length === 0) {
+                    resultContainer.innerHTML = "No results found.";
+                } else {
+                    resultContainer.innerHTML = "";
+                    generateTable(results, "resultContainer");
+                }
+            });
+        });
+
+        async function fetchLexemeSenses(lexemeId) {
+            const url = `https://www.wikidata.org/wiki/Special:EntityData/${lexemeId}.json`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    console.error(`Error: Received status code ${response.status}`);
+                    return [];
+                }
+                
+                const data = await response.json();
+                const lexeme = data.entities[lexemeId];
+                if (!lexeme || !lexeme.senses) {
+                    return [];
+                }
+                
+                return Object.values(lexeme.senses).map(sense => sense.glosses.it || 'No Italian gloss available');
+            } catch (error) {
+                console.error("Error fetching lexeme senses:", error);
+                return [];
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.body.addEventListener("click", async (event) => {
+                if (event.target.classList.contains("select-btn")) {
+                    const row = document.querySelector(".selected");
+                    const lexemeId = row.cells[0].innerText;
+                    
+                    document.getElementById("sensesContainer").innerHTML = "Loading senses...";
+                    
+                    const senses = await fetchLexemeSenses(lexemeId);
+                    console.log(senses);
+                    document.getElementById("sensesContainer").innerHTML = senses.length
+                        ? `<ol>${senses.map(sense => `<li>${sense.value}</li>`).join('')}</ol>`
+                        : "No senses available for this lexeme.";
+                }
+            });
+        });
+    </script>
+
+    <script>
+        let currentCardIndex = 0;
+        const cards = document.querySelectorAll('.card');
+
+        function updateCards() {
+            cards.forEach((card, index) => {
+                card.classList.remove('active', 'prev', 'next');
+                if (index === currentCardIndex) {
+                    card.classList.add('active');
+                } else if (index < currentCardIndex) {
+                    card.classList.add('prev');
+                } else {
+                    card.classList.add('next');
+                }
+            });
+        }
+
+        function nextCard() {
+            if (currentCardIndex < cards.length - 1) {
+                currentCardIndex++;
+                updateCards();
+            }
+        }
+
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                updateCards();
+            }
+        }
+    </script>
+
+</body>
+</html>
