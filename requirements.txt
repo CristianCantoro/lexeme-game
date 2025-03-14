@@ -1,1 +1,9 @@
-flask
+# Python version 3.12
+Flask==3.1.0
+flask-cors==5.0.1
+ipython==9.0.0
+Jinja2==3.1.5
+jsonify==0.5
+mwoauth==0.4.0
+requests==2.32.3
+urllib3==2.3.0
