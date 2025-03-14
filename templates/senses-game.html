@@ -98,7 +98,7 @@
         .button-group button:hover {
             background: #0056b3;
         }
-        table {
+        #resultContainer table {
             width: 50%;
             border-collapse: collapse;
         }
@@ -112,7 +112,6 @@
         }
         .quiz-container {
             position: relative;
-            overflow: hidden;
             width: 100%;
             height: 350px; /* Increased height to accommodate buttons */
             display: flex;
@@ -121,7 +120,7 @@
         }
         .card {
             width: 80%;
-            height: 80%;
+            min-height: 80%;
             position: absolute;
             top: 0;
             left: 100%;
@@ -193,24 +192,25 @@
         <div class="ocr-text">Loading...</div>
 
         <div class="quiz-container">
-            <div class="card active">
+            <div class="card active" id="search-lemma">
                 <input type="text" id="lemmaInput" placeholder="Enter lemma...">
                 <input type="text" id="languageInput" placeholder="Language (default: en)">
                 <button id="searchButton">Search Lemma</button>
                 <div id="resultContainer"></div>
             </div>
-            <div class="card">
+            <div class="card" id="select-lexeme">
                 <h3>Lexeme Senses</h3>
                 <div id="sensesContainer">Select a lexeme to view its senses.</div>
-            </div>
-            <div class="card">
-                <div class="input-field">
-                    <input type="text" placeholder="Loading...">
+                <div class="button-group" id="submit-done">
+                    <button id="all-done">All Done</button>
                 </div>
-                <div class="button-group">
-                    <button id="check-answer">Check Answer</button>
-                    <button id="hint">Hint</button>
-                    <button id="next">Next</button>
+                <div class="collapsible-content" id="lexeme-sense-content">
+                    <div class="input-field">
+                        <input type="text" placeholder="Loading...">
+                        <div class="button-group" id="submit-sense">
+                            <button id="all-done">Add sense</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Navigation Buttons Inside the Container -->
@@ -241,7 +241,7 @@
     </script>
 
     <script type="text/javascript">
-       function generateTable(lemmas, containerId) {
+       function generateLemmaTable(lemmas, containerId) {
         if (!lemmas || lemmas.length === 0) return;
 
         const container = document.getElementById(containerId);
@@ -390,30 +390,87 @@
                     resultContainer.innerHTML = "No results found.";
                 } else {
                     resultContainer.innerHTML = "";
-                    generateTable(results, "resultContainer");
+                    generateLemmaTable(results, "resultContainer");
                 }
             });
         });
 
-        async function fetchLexemeSenses(lexemeId) {
+        function generateSensesTable(senses, containerId) {
+            if (!senses || senses.length === 0) return;
+            
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error('Container not found');
+                return;
+            }
+            
+            container.innerHTML = "";
+            
+            // Create content div
+            const content = document.createElement('div');
+            content.className = 'content';
+            
+            // Create table
+            const table = document.createElement('table');
+            
+            // Create table headers
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            const headers = ['ID', 'Language', 'Sense', 'Select'];
+            
+            headers.forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create table body
+            const tbody = document.createElement('tbody');
+            senses.forEach(sense => {
+                const row = document.createElement('tr');
+                console.log(sense);
+                row.innerHTML = `
+                    <td>${sense.id}</td>
+                    <td>${sense.gloss.language}</td>
+                    <td>${sense.gloss.value}</td>
+                    <td><button class="edit-btn collapsible-button" onclick="toggleCollapsible()">Edit me</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            
+            // Append elements
+            content.appendChild(table);
+            container.appendChild(content);
+        };
+
+        async function fetchLexemeSenses(lexemeId, containerId) {
             const url = `https://www.wikidata.org/wiki/Special:EntityData/${lexemeId}.json`;
             try {
                 const response = await fetch(url);
                 if (!response.ok) {
                     console.error(`Error: Received status code ${response.status}`);
-                    return [];
+                    return;
                 }
                 
                 const data = await response.json();
                 const lexeme = data.entities[lexemeId];
                 if (!lexeme || !lexeme.senses) {
-                    return [];
+                    document.getElementById(containerId).innerHTML = "No senses available for this lexeme.";
+                    return;
                 }
                 
-                return Object.values(lexeme.senses).map(sense => sense.glosses.it || 'No Italian gloss available');
+                const senses = Object.values(lexeme.senses).map((sense, index) => ({
+                    id: index + 1,
+                    gloss: sense.glosses?.it || 'No gloss available'
+                }));
+                
+                generateSensesTable(senses, containerId);
             } catch (error) {
                 console.error("Error fetching lexeme senses:", error);
-                return [];
+                document.getElementById(containerId).innerHTML = "Error loading senses.";
             }
         }
 
@@ -425,14 +482,11 @@
                     
                     document.getElementById("sensesContainer").innerHTML = "Loading senses...";
                     
-                    const senses = await fetchLexemeSenses(lexemeId);
+                    const senses = await fetchLexemeSenses(lexemeId, "sensesContainer");
                     console.log(senses);
-                    document.getElementById("sensesContainer").innerHTML = senses.length
-                        ? `<ol>${senses.map(sense => `<li>${sense.value}</li>`).join('')}</ol>`
-                        : "No senses available for this lexeme.";
                 }
             });
-        });
+         });
     </script>
 
     <script>
@@ -463,6 +517,15 @@
             if (currentCardIndex > 0) {
                 currentCardIndex--;
                 updateCards();
+            }
+        }
+
+        function toggleCollapsible() {
+            var content = document.getElementById("lexeme-sense-content");
+            if (content.style.display === "none" || content.style.display === "") {
+                content.style.display = "block";
+            } else {
+                content.style.display = "none";
             }
         }
     </script>
